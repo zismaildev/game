@@ -766,7 +766,7 @@
             if (!user || !pass) return alert('กรุณากรอกข้อมูลให้ครบถ้วน');
 
             try {
-                const res = await fetch('http://localhost:3000/api/login', {
+                const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, password: pass })
@@ -793,7 +793,7 @@
             let currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if(currentUser && currentUser.role === 'student') {
                 try {
-                    const res = await fetch('http://localhost:3000/api/score', {
+                    const res = await fetch('/api/score', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ username: currentUser.username, points })
@@ -812,7 +812,7 @@
 
         async function showLeaderboard() {
             try {
-                const res = await fetch('http://localhost:3000/api/users');
+                const res = await fetch('/api/users');
                 let users = await res.json();
                 users = users.filter(u => u.role === 'student');
                 users.sort((a, b) => b.score - a.score);
@@ -837,7 +837,7 @@
         async function showTeacherDashboard() {
             document.getElementById('teacherDashboard').style.display = 'block';
             try {
-                const res = await fetch('http://localhost:3000/api/users');
+                const res = await fetch('/api/users');
                 let users = await res.json();
                 users = users.filter(u => u.role === 'student');
                 users.sort((a, b) => b.score - a.score);
