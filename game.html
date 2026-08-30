@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Network Puzzle Simulator - Cyber Sec</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body {
+            background: #09090b; 
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding: 20px;
+            margin: 0;
+            user-select: none;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        .header { margin-bottom: 20px; text-align: center; }
+        .header h1 {
+            margin: 0;
+            background: linear-gradient(90deg, #38bdf8, #a855f7, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2rem;
+            text-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        }
+        
+        .layout-wrapper {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(24, 24, 27, 0.8);
+            border: 1px solid #27272a;
+            border-radius: 12px;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .chapter-box {
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .chapter-header {
+            background: #27272a;
+            padding: 12px 15px;
+            font-weight: 600;
+            color: #38bdf8;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chapter-header:hover { background: #3f3f46; }
+
+        .level-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: none;
+        }
+
+        .chapter-box.active .level-list {
+            display: block;
+        }
+
+        .level-item {
+            padding: 12px 15px 12px 25px;
+            border-bottom: 1px solid #27272a;
+            cursor: pointer;
+            color: #a1a1aa;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .level-item:last-child { border-bottom: none; }
+        .level-item:hover { color: #f8fafc; background: #27272a; }
+        .level-item.active {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10b981;
+            font-weight: 600;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            min-width: 0;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+            align-items: center;
+            background: rgba(24, 24, 27, 0.8);
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: 1px solid #27272a;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #18181b;
+            color: #e4e4e7;
+            border: 1px solid #3f3f46;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        button:hover:not(:disabled) {
+            background: #27272a;
+            border-color: #52525b;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        button.active-sim {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border-color: #059669;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .inventory-badge {
+            background: #3f3f46;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            margin-left: 4px;
+        }
+
+        .canvas-container { 
+            position: relative; 
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+        }
+        
+        canvas {
+            background: #000;
+            background-image: 
+                radial-gradient(#1e293b 1px, transparent 1px),
+                radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            border: 1px solid #27272a;
+            border-radius: 12px;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8), 0 10px 40px rgba(0, 0, 0, 0.8);
+            cursor: default;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Quest Board Overlay */
+        .quest-board {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(9, 9, 11, 0.85);
+            border: 1px solid #38bdf8;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: #f8fafc;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+            backdrop-filter: blur(5px);
+            max-width: 350px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .quest-board h3 { margin: 0 0 5px 0; color: #38bdf8; font-size: 1.1rem; }
+        .quest-board p { margin: 0; font-size: 0.9rem; color: #cbd5e1; line-height: 1.4; }
+
+        /* Level Complete Overlay */
+        #level-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            z-index: 50;
+        }
+        #level-overlay h2 {
+            font-size: 3rem;
+            margin: 0 0 10px 0;
+            color: #10b981;
+            text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+        }
+        #level-overlay button {
+            background: #10b981;
+            color: black;
+            font-size: 1.2rem;
+            padding: 10px 30px;
+            border: none;
+            margin-top: 20px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        #level-overlay button:hover { background: #34d399; transform: scale(1.05); }
+
+        /* Tooltip */
+        #tooltip {
+            position: absolute;
+            background: rgba(9, 9, 11, 0.95);
+            border: 1px solid #3f3f46;
+            border-radius: 8px;
+            padding: 15px;
+            pointer-events: none;
+            display: none;
+            z-index: 20;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
+            min-width: 180px;
+        }
+        #tooltip h4 { margin: 0 0 10px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+        #tooltip p { margin: 6px 0; display: flex; justify-content: space-between; font-size: 0.9rem;}
+        #tooltip p span.label { color: #71717a; text-transform: uppercase; letter-spacing: 1px; }
+        #tooltip p span.val { font-family: monospace; font-size: 1rem; color: #e4e4e7; }
+        
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(24, 24, 27, 0.95);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 8px;
+            border: 1px solid #3f3f46;
+            display: none;
+            z-index: 100;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .toast-success { border-left: 4px solid #10b981 !important; color: #34d399 !important; }
+        .toast-error { border-left: 4px solid #ef4444 !important; color: #f87171 !important; }
+        
+        .sim-status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(9, 9, 11, 0.85);
+            border: 1px solid #a855f7;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: none;
+            color: #c084fc;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Modals & Dashboard */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 12px;
+            padding: 30px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        .modal-content h2 { margin-top: 0; color: #f4f4f5; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; color: #a1a1aa; margin-bottom: 5px; font-size: 0.9rem; }
+        .form-group input { 
+            width: 100%; padding: 10px; border-radius: 6px; 
+            border: 1px solid #3f3f46; background: #09090b; color: #fff; box-sizing: border-box;
+        }
+        .btn-primary {
+            width: 100%; background: #6366f1; color: white; border: none;
+            padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer;
+            margin-top: 10px; display: block; text-align: center;
+        }
+        .btn-primary:hover { background: #4f46e5; }
+        
+        .teacher-dashboard {
+            display: none;
+            width: 100%; height: 100%;
+            background: #09090b;
+            padding: 40px;
+            box-sizing: border-box;
+            color: #fff;
+            overflow-y: auto;
+            position: absolute;
+            top: 0; left: 0; z-index: 50;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #27272a; }
+        th { background: #18181b; color: #a1a1aa; font-weight: 500; }
+        tr:hover { background: #18181b; }
+        
+        .header-profile {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            display: none;
+        }
+        .profile-info { text-align: right; }
+        .profile-name { font-weight: bold; color: #f4f4f5; font-size: 1.1rem; }
+        .profile-score { color: #eab308; font-size: 0.9rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Network Puzzle Simulator</h1>
+        <div class="header-profile" id="headerProfile">
+            <div class="profile-info">
+                <div class="profile-name" id="profileName">Student Name</div>
+                <div class="profile-score" id="profileScore">🏆 0 pts</div>
+            </div>
+            <button onclick="showLeaderboard()" style="background: transparent; border: 1px solid #3f3f46;">🏅 Leaderboard</button>
+            <button onclick="logout()" style="background: transparent; border: 1px solid #ef4444; color: #ef4444;">Logout</button>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>เข้าสู่ระบบ (Login)</h2>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="loginUser" placeholder="ชื่อผู้ใช้ (เช่น student1, teacher)">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPass" placeholder="รหัสผ่าน (ครูใช้ 1234)">
+            </div>
+            <button class="btn-primary" onclick="doLogin()">เข้าสู่ระบบ</button>
+            <p style="text-align:center; color:#a1a1aa; font-size:0.9rem; margin-top:15px;">ยังไม่มีบัญชี? ระบบจะสมัครให้อัตโนมัติ</p>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboardModal" class="modal">
+        <div class="modal-content" style="width: 500px;">
+            <h2>🏆 กระดานผู้นำ (Leaderboard)</h2>
+            <table id="leaderboardTable">
+                <thead>
+                    <tr>
+                        <th>อันดับ</th>
+                        <th>ชื่อผู้เล่น</th>
+                        <th>คะแนนรวม</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- JS Populated -->
+                </tbody>
+            </table>
+            <button class="btn-primary" onclick="document.getElementById('leaderboardModal').style.display='none'" style="margin-top:20px; background:#3f3f46;">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+
+    <!-- Teacher Dashboard -->
+    <div id="teacherDashboard" class="teacher-dashboard">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2>👨‍🏫 Teacher Dashboard</h2>
+            <button onclick="logout()" style="background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Logout</button>
+        </div>
+        <p style="color:#a1a1aa;">ดูคะแนนรวมของนักเรียนทั้งหมดที่เรียนรู้และเล่นโหมดสุ่ม (Endless Mode)</p>
+        
+        <table id="teacherTable">
+            <thead>
+                <tr>
+                    <th>นักเรียน (Username)</th>
+                    <th>คะแนนสะสม (Total Score)</th>
+                    <th>ระดับความเข้าใจ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- JS Populated -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="layout-wrapper">
+        <div class="sidebar" id="sidebar">
+            <!-- Rendered by JS -->
+        </div>
+
+        <div class="main-content">
+            <div class="toolbar">
+                <button id="btn-PC" onclick="addNode('PC')">💻 PC <span class="inventory-badge" id="inv-PC">0</span></button>
+                <button id="btn-Laptop" onclick="addNode('Laptop')">📱 Laptop <span class="inventory-badge" id="inv-Laptop">0</span></button>
+                <button id="btn-Router" onclick="addNode('Router')">📡 Router <span class="inventory-badge" id="inv-Router">0</span></button>
+                <button id="btn-Switch" onclick="addNode('Switch')">🔀 Switch <span class="inventory-badge" id="inv-Switch">0</span></button>
+                <button id="btn-AP" onclick="addNode('AP')">📶 AP <span class="inventory-badge" id="inv-AP">0</span></button>
+                <button id="btn-Server" onclick="addNode('Server')">🗄️ Server <span class="inventory-badge" id="inv-Server">0</span></button>
+                <button id="btn-Firewall" onclick="addNode('Firewall')">🧱 Firewall <span class="inventory-badge" id="inv-Firewall">0</span></button>
+                <button id="btn-IDS" onclick="addNode('IDS')">👁️ IDS <span class="inventory-badge" id="inv-IDS">0</span></button>
+                <button id="btn-Hacker" onclick="addNode('Hacker')" style="display:none;">👾 Hacker</button>
+                <div style="width: 1px; height: 24px; background: #3f3f46; margin: 0 8px;"></div>
+                <button id="simBtn" onclick="runSimulation()">🚀 รันระบบ (Run Simulation)</button>
+                <span class="hint" style="margin-left:auto;">💡 <b>ลากสาย:</b> เมาส์ซ้าย | <b>คลิกปุ่มอุปกรณ์:</b> แล้วคลิกวางที่กระดาน | <b>คลิกขวา:</b> ลบอุปกรณ์/สาย</span>
+            </div>
+
+            <div class="canvas-container" id="canvas-container">
+                <!-- Using fixed internal resolution, CSS scales it to fill container -->
+                <canvas id="topoCanvas" width="1100" height="600"></canvas>
+                
+                <div class="quest-board">
+                    <h3 id="quest-title">ด่านที่ 1</h3>
+                    <p id="quest-desc">คำอธิบาย</p>
+                </div>
+
+                <div id="tooltip">
+                    <h4 id="tt-header"><span id="tt-icon"></span> <span id="tt-type"></span></h4>
+                    <p><span class="label">ID</span> <span class="val" id="tt-id"></span></p>
+                    <p><span class="label">IP</span> <span class="val" id="tt-ip" style="color: #38bdf8;"></span></p>
+                </div>
+                
+                <div id="sim-status" class="sim-status">คลิกโหนดต้นทาง (Source)</div>
+                
+                <div id="level-overlay">
+                    <h2>🎉 ภารกิจสำเร็จ!</h2>
+                    <p style="color:#cbd5e1; font-size:1.2rem;">ระบบเครือข่ายทำงานได้สมบูรณ์</p>
+                    <button onclick="nextLevel()">ด่านถัดไป ➔</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast">Message</div>
+
+    <script>
+        const canvas = document.getElementById('topoCanvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+        const simStatus = document.getElementById('sim-status');
+        const toastEl = document.getElementById('toast');
+        const overlay = document.getElementById('level-overlay');
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            // Scale mouse coordinates to match canvas internal resolution
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function getNodeAtPosition(x, y) {
+            return nodes.find(node => Math.hypot(node.x - x, node.y - y) <= node.radius + 5);
+        }
+
+        const NODE_RADIUS = 28;
+        const MAX_CABLE_LENGTH = 350;
+        const NODE_STYLES = {
+            PC: { color: '#38bdf8', icon: '💻' },
+            Laptop: { color: '#22d3ee', icon: '📱' },
+            Router: { color: '#f59e0b', icon: '📡' },
+            Switch: { color: '#a855f7', icon: '🔀' },
+            AP: { color: '#ec4899', icon: '📶' },
+            Server: { color: '#10b981', icon: '🗄️' },
+            Firewall: { color: '#f97316', icon: '🧱' },
+            IDS: { color: '#eab308', icon: '👁️' },
+            Hacker: { color: '#ef4444', icon: '👾' }
+        };
+
+        // --- Chapters Data ---
+        const CHAPTERS = [
+            {
+                title: "บทที่ 1: พื้นฐานเครือข่าย",
+                levels: [
+                    {
+                        title: "1.1 การเชื่อมต่อเบื้องต้น",
+                        description: "เชื่อมต่อสายเคเบิลระหว่าง PC-1 กับ Server-1 โดยตรง",
+                        inventory: { PC: 0, Router: 0, Switch: 0, Server: 0, Firewall: 0 },
+                        nodes: [
+                            { id: 'PC-1', type: 'PC', x: 250, y: 300, radius: NODE_RADIUS, ip: '192.168.1.10', locked: true },
+                            { id: 'Server-1', type: 'Server', x: 550, y: 300, radius: NODE_RADIUS, ip: '192.168.1.1', locked: true }
+                        ],
+                        edges: [],
+                        goals: [{ from: 'PC-1', to: 'Server-1', expect: 'success' }]
+                    },
+                    {
+                        title: "1.2 ข้ามวงแลนด้วย Router",
+                        description: "PC-1 ต้องการติดต่อ Server-1 ที่อยู่คนละวงแลน (Subnet) วาง Router ไว้ตรงกลางเพื่อเชื่อมต่อ 2 ฝั่ง",
+                        inventory: { PC: 0, Router: 1, Switch: 0, Server: 0, Firewall: 0 },
+                        nodes: [
+                            { id: 'PC-1', type: 'PC', x: 200, y: 450, radius: NODE_RADIUS, ip: '192.168.1.10', locked: true },
+                            { id: 'Server-1', type: 'Server', x: 750, y: 250, radius: NODE_RADIUS, ip: '10.0.0.1', locked: true }
+                        ],
+                        edges: [],
+                        goals: [{ from: 'PC-1', to: 'Server-1', expect: 'success', mustInclude: ['Router'] }]
+                    },
+                    {
+                        title: "1.3 เครือข่ายทางไกล",
+                        description: "เชื่อมต่อข้ามเมือง! ใช้ Router 2 ตัวเพื่อส่งต่อข้อมูลจาก PC ไปยัง Server ไกลๆ",
+                        inventory: { PC: 0, Router: 2, Switch: 0, Server: 0, Firewall: 0 },
+                        nodes: [
+                            { id: 'PC-1', type: 'PC', x: 150, y: 300, radius: NODE_RADIUS, ip: '192.168.1.10', locked: true },
+                            { id: 'Server-1', type: 'Server', x: 950, y: 300, radius: NODE_RADIUS, ip: '172.16.0.1', locked: true }
+                        ],
+                        edges: [],
+                        goals: [{ from: 'PC-1', to: 'Server-1', expect: 'success', mustInclude: ['Router'] }]
+                    }
+                ]
+            },
+            {
+                title: "บทที่ 2: ระบบ Switching",
+                levels: [
+                    {
+                        title: "2.1 เครือข่ายสาขา (LAN)",
+                        description: "ใช้ Switch รวมสัญญาณจาก PC-1 และ PC-2 ให้เชื่อมต่อไปยัง Router ตัวเดียวกัน",
+                        inventory: { PC: 0, Router: 0, Switch: 1, Server: 0, Firewall: 0 },
+                        nodes: [
+                            { id: 'PC-1', type: 'PC', x: 150, y: 250, radius: NODE_RADIUS, ip: '192.168.1.10', locked: true },
+                            { id: 'PC-2', type: 'PC', x: 150, y: 450, radius: NODE_RADIUS, ip: '192.168.1.11', locked: true },
+                            { id: 'Router-1', type: 'Router', x: 600, y: 350, radius: NODE_RADIUS, ip: '192.168.1.1', locked: true },
+                            { id: 'Server-1', type: 'Server', x: 900, y: 350, radius: NODE_RADIUS, ip: '10.0.0.1', locked: true }
+                        ],
+                        edges: [{ from: 'Router-1', to: 'Server-1' }],
+                        goals: [
+                            { from: 'PC-1', to: 'Server-1', expect: 'success', mustInclude: ['Switch', 'Router'] },
+                            { from: 'PC-2', to: 'Server-1', expect: 'success', mustInclude: ['Switch', 'Router'] }
+                        ]
+                    },
+                    {
+                        title: "2.2 ออฟฟิศ 2 แผนก",
+                        description: "สร้างเครือข่ายสำหรับ 2 แผนก แต่ละแผนกมี Switch ของตัวเอง แล้วนำไปต่อกับ Router ตัวกลาง",
+                        inventory: { PC: 0, Router: 1, Switch: 2, Server: 0, Firewall: 0 },
+                        nodes: [
+                            { id: 'PC-1', type: 'PC', x: 100, y: 250, radius: NODE_RADIUS, ip: '192.168.1.10', locked: true },
+                            { id: 'PC-2', type: 'PC', x: 100, y: 450, radius: NODE_RADIUS, ip: '192.168.2.10', locked: true },
+                            { id: 'Server-1', type: 'Server', x: 950, y: 350, radius: NODE_RADIUS, ip: '10.0.0.1', locked: true }
+                        ],
+                        edges: [],
+                        goals: [
+                            { from: 'PC-1', to: 'Server-1', expect: 'success', mustInclude: ['Switch', 'Router'] },
+                            { from: 'PC-2', to: 'Server-1', expect: 'success', mustInclude: ['Switch', 'Router'] }
+                        ]
+                    },
+                    {
+                        title: "2.3 ระบบรวมศูนย์",
+                        description: "PC ทั้ง 3 เครื่องต้องเข้าถึง Server ได้ผ่าน Switch ศูนย์กลางเพียงตัวเดียว",
+                        inventory: { PC: 0, Router: 0, Switch: 1, Server: 0, Firewall: 0 },
+                        nodes: [
+                            { id: 'PC-1', type: 'PC', x: 150, y: 200, radius: NODE_RADIUS, ip: '192.168.1.10', locked: true },
+                            { id: 'PC-2', type: 'PC', x: 100, y: 350, radius: NODE_RADIUS, ip: '192.168.1.11', locked: true },
+                            { id: 'PC-3', type: 'PC', x: 150, y: 500, radius: NODE_RADIUS, ip: '192.168.1.12', locked: true },
+                            { id: 'Server-1', type: 'Server', x: 800, y: 350, radius: NODE_RADIUS, ip: '192.168.1.1', locked: true }
+                        ],
+                        edges: [],
+                        goals: [
+                            { from: 'PC-1', to: 'Server-1', expect: 'success', mustInclude: ['Switch'] },
+                            { from: 'PC-2', to: 'Server-1', expect: 'success', mustInclude: ['Switch'] },
+                            { from: 'PC-3', to: 'Server-1', expect: 'success', mustInclude: ['Switch'] }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "บทที่ 3: การจัดเส้นทาง (Routing)",
+                levels: [
+                    {
+                        title: "3.1 โครงข่ายอินเทอร์เน็ต",
+                        description: "สร้างเส้นทางอินเทอร์เน็ตสุดโหด ผ่าน Router 3 ตัว ก่อนจะไปถึง Server ปลายทาง",
+                        inventory: { PC: 0, Router: 3, Switch: 1, Server: 0, Firewall: 0 },
+                        nodes: [
+                            { id: 'PC-1', type: 'PC', x: 100, y: 300, radius: NODE_RADIUS, ip: '192.168.1.10', locked: true },
+                            { id: 'Server-1', type: 'Server', x: 950, y: 300, radius: NODE_RADIUS, ip: '8.8.8.8', locked: true }
+                        ],
+                        edges: [],
+                        goals: [
+                            { from: 'PC-1', to: 'Server-1', expect: 'success', mustInclude: ['Switch', 'Router'] }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "บทที่ 4: Cyber Security",
+                levels: [
+                    {
+                        title: "4.1 การป้องกันเบื้องต้น 🛡️",
+                        description: "Hacker ปล่อยไวรัสผ่านสวิตช์! วาง Firewall กั้นก่อนถึง Server (อนุญาตเฉพาะ PC-1 ผ่านไปได้)",
+                        inventory: { PC: 0, Router: 0, Switch: 0, Server: 0, Firewall: 1 },
+                        nodes: [
+                            { id: 'PC-1', type: 'PC', x: 150, y: 250, radius: NODE_RADIUS, ip: '192.168.1.10', locked: true },
+                            { id: 'Hacker-1', type: 'Hacker', x: 150, y: 450, radius: NODE_RADIUS, ip: '66.249.64.1', locked: true },
+                            { id: 'Switch-1', type: 'Switch', x: 450, y: 350, radius: NODE_RADIUS, ip: '192.168.1.2', locked: true },
+                            { id: 'Server-1', type: 'Server', x: 950, y: 350, radius: NODE_RADIUS, ip: '10.0.0.1', locked: true }
+                        ],
+                        edges: [
+                            { from: 'PC-1', to: 'Switch-1' },
+                            { from: 'Hacker-1', to: 'Switch-1' }
+                        ],
+                        goals: [
+                            { from: 'PC-1', to: 'Server-1', expect: 'success', mustInclude: ['Firewall'] },
+                            { from: 'Hacker-1', to: 'Server-1', expect: 'blocked' }
+                        ]
+                    },
+                    {
+                        title: "4.2 ไวรัสในองค์กร",
+                        description: "มี Hacker แฝงตัวอยู่ในองค์กร! ตั้งค่าการป้องกันโดยใช้ Firewall กั้นระหว่างระบบภายในกับเซิร์ฟเวอร์",
+                        inventory: { PC: 0, Router: 1, Switch: 2, Server: 0, Firewall: 1 },
+                        nodes: [
+                            { id: 'PC-1', type: 'PC', x: 100, y: 200, radius: NODE_RADIUS, ip: '192.168.1.10', locked: true },
+                            { id: 'PC-2', type: 'PC', x: 100, y: 350, radius: NODE_RADIUS, ip: '192.168.1.11', locked: true },
+                            { id: 'Hacker-1', type: 'Hacker', x: 100, y: 500, radius: NODE_RADIUS, ip: '192.168.1.99', locked: true },
+                            { id: 'Server-1', type: 'Server', x: 950, y: 350, radius: NODE_RADIUS, ip: '10.0.0.1', locked: true }
+                        ],
+                        edges: [],
+                        goals: [
+                            { from: 'PC-1', to: 'Server-1', expect: 'success', mustInclude: ['Switch', 'Router', 'Firewall'] },
+                            { from: 'PC-2', to: 'Server-1', expect: 'success', mustInclude: ['Switch', 'Router', 'Firewall'] },
+                            { from: 'Hacker-1', to: 'Server-1', expect: 'blocked' }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: "บทที่ 5: Sandbox",
+                levels: [
+                    {
+                        title: "🛠️ โหมดอิสระ",
+                        description: "สร้างและจำลองเครือข่ายในแบบของคุณเอง! (คลิกปุ่มรันเพื่อทดสอบรับส่งแพ็กเก็ตแบบอิสระ)",
+                        inventory: { PC: 99, Router: 99, Switch: 99, Server: 99, Firewall: 99 },
+                        nodes: [],
+                        edges: [],
+                        goals: null
+                    }
+                ]
+            },
+            {
+                title: "บทที่ 6: ภารกิจสุ่ม (Endless Mode) ♾️",
+                levels: [
+                    {
+                        title: "🎲 เข้าสู่ภารกิจสุ่ม",
+                        isEndless: true,
+                        forceNew: true
+                    }
+                ]
+            }
+        ];
+
+        // --- Game State ---
+        let currentChapterIdx = 0;
+        let currentLevelIdx = 0;
+        let nodes = [];
+        let edges = [];
+        let currentInventory = {};
+        let packets = []; 
+        let simulationResults = [];
+        let floatingTexts = [];
+        let endlessStreak = 0;
+        let timerInterval = null;
+        let timeLeft = 0;
+
+        let placementMode = null;
+        let connectingSourceNode = null;
+        let movingNode = null;
+        let currentMousePos = { x: 0, y: 0 };
+        let hoverNode = null;
+        
+        let simModeSandbox = false;
+        let simStepSandbox = 0; 
+        let simSourceSandbox = null;
+
+        function showToast(msg, type = '') {
+            toastEl.textContent = msg;
+            toastEl.className = type === 'success' ? 'toast-success' : (type === 'error' ? 'toast-error' : '');
+            toastEl.style.display = 'block';
+            setTimeout(() => { toastEl.style.display = 'none'; }, 4000);
+        }
+
+        // --- Auth & DB Logic ---
+        function checkAuth() {
+            const currentUserStr = localStorage.getItem('currentUser');
+            if (!currentUserStr) {
+                document.getElementById('loginModal').style.display = 'flex';
+                document.querySelector('.layout-wrapper').style.display = 'none';
+            } else {
+                const currentUser = JSON.parse(currentUserStr);
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('headerProfile').style.display = 'flex';
+                document.getElementById('profileName').textContent = currentUser.username;
+                document.getElementById('profileScore').textContent = `🏆 ${currentUser.score} pts`;
+
+                if (currentUser.role === 'teacher') {
+                    document.querySelector('.layout-wrapper').style.display = 'none';
+                    document.getElementById('headerProfile').style.display = 'none';
+                    showTeacherDashboard();
+                } else {
+                    document.querySelector('.layout-wrapper').style.display = 'flex';
+                    document.getElementById('teacherDashboard').style.display = 'none';
+                    renderSidebar();
+                    loadLevel();
+                }
+            }
+        }
+
+        async function doLogin() {
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+            if (!user || !pass) return alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+
+            try {
+                const res = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (data.message === 'Register successful') alert(`สมัครสมาชิกสำเร็จ! ยินดีต้อนรับนักเรียน ${user}`);
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    checkAuth();
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณารัน node server.js');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.reload();
+        }
+
+        async function saveScore(points) {
+            let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if(currentUser && currentUser.role === 'student') {
+                try {
+                    const res = await fetch('http://localhost:3000/api/score', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: currentUser.username, points })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        currentUser.score = data.score;
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        document.getElementById('profileScore').textContent = `🏆 ${currentUser.score} pts`;
+                    }
+                } catch (err) {
+                    console.error("Failed to save score");
+                }
+            }
+        }
+
+        async function showLeaderboard() {
+            try {
+                const res = await fetch('http://localhost:3000/api/users');
+                let users = await res.json();
+                users = users.filter(u => u.role === 'student');
+                users.sort((a, b) => b.score - a.score);
+                
+                const tbody = document.querySelector('#leaderboardTable tbody');
+                tbody.innerHTML = '';
+                users.forEach((u, idx) => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${idx + 1}</td>
+                            <td>${u.username}</td>
+                            <td style="color:#eab308; font-weight:bold;">${u.score}</td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('leaderboardModal').style.display = 'flex';
+            } catch (err) {
+                alert("Failed to load leaderboard");
+            }
+        }
+
+        async function showTeacherDashboard() {
+            document.getElementById('teacherDashboard').style.display = 'block';
+            try {
+                const res = await fetch('http://localhost:3000/api/users');
+                let users = await res.json();
+                users = users.filter(u => u.role === 'student');
+                users.sort((a, b) => b.score - a.score);
+                
+                const tbody = document.querySelector('#teacherTable tbody');
+                tbody.innerHTML = '';
+                users.forEach((u) => {
+                    let understanding = 'ต้องปรับปรุง ❌';
+                    let uColor = '#ef4444';
+                    if (u.score >= 2000) { understanding = 'ดีเยี่ยม ⭐'; uColor = '#10b981'; }
+                    else if (u.score >= 1000) { understanding = 'ดี 🟢'; uColor = '#38bdf8'; }
+                    else if (u.score >= 500) { understanding = 'ปานกลาง 🟡'; uColor = '#eab308'; }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${u.username}</td>
+                            <td style="color:#eab308; font-weight:bold;">${u.score}</td>
+                            <td style="color:${uColor}; font-weight:bold;">${understanding}</td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                alert("Failed to load dashboard");
+            }
+        }
+
+        // --- UI Rendering ---
+        function renderSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.innerHTML = '';
+            
+            CHAPTERS.forEach((chap, cIdx) => {
+                const box = document.createElement('div');
+                box.className = 'chapter-box' + (cIdx === currentChapterIdx ? ' active' : '');
+                
+                const header = document.createElement('div');
+                header.className = 'chapter-header';
+                header.innerHTML = `<span>${chap.title}</span> <span>${cIdx === currentChapterIdx ? '▼' : '▶'}</span>`;
+                header.onclick = () => {
+                    // Toggle visibility
+                    if (box.classList.contains('active')) {
+                        box.classList.remove('active');
+                        header.querySelector('span:last-child').textContent = '▶';
+                    } else {
+                        document.querySelectorAll('.chapter-box').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.chapter-header span:last-child').forEach(s => s.textContent = '▶');
+                        box.classList.add('active');
+                        header.querySelector('span:last-child').textContent = '▼';
+                    }
+                };
+                
+                const list = document.createElement('ul');
+                list.className = 'level-list';
+                
+                chap.levels.forEach((lvl, lIdx) => {
+                    const li = document.createElement('li');
+                    li.className = 'level-item' + (cIdx === currentChapterIdx && lIdx === currentLevelIdx ? ' active' : '');
+                    li.innerHTML = `${cIdx === currentChapterIdx && lIdx === currentLevelIdx ? '🎯' : '•'} ${lvl.title}`;
+                    li.onclick = () => {
+                        currentChapterIdx = cIdx;
+                        currentLevelIdx = lIdx;
+                        if(lvl.isEndless) lvl.forceNew = true;
+                        renderSidebar();
+                        loadLevel();
+                    };
+                    list.appendChild(li);
+                });
+                
+                box.appendChild(header);
+                box.appendChild(list);
+                sidebar.appendChild(box);
+            });
+        }
+
+        function updateInventoryUI() {
+            ['PC', 'Laptop', 'Router', 'Switch', 'AP', 'Server', 'Firewall', 'IDS'].forEach(type => {
+                const count = currentInventory[type] || 0;
+                document.getElementById(`inv-${type}`).textContent = count > 90 ? '∞' : count;
+                document.getElementById(`btn-${type}`).disabled = count <= 0;
+            });
+            // Show hacker button only in sandbox
+            const hackerBtn = document.getElementById('btn-Hacker');
+            if(CHAPTERS[currentChapterIdx].levels[currentLevelIdx].goals === null) {
+                hackerBtn.style.display = 'flex';
+            } else {
+                hackerBtn.style.display = 'none';
+            }
+        }
+
+        // --- Game Logic ---
+        function generateRandomLevel() {
+            endlessStreak++;
+            const numPCs = Math.floor(Math.random() * 3) + 1; // 1-3 PCs
+            const hasHacker = Math.random() > 0.5;
+            const numRouters = Math.floor(Math.random() * 3); // 0-2
+            const numSwitches = numPCs > 1 ? 1 + Math.floor(Math.random() * 2) : Math.floor(Math.random() * 2);
+            
+            let hasWireless = false;
+            let pcTypes = [];
+            for(let i=1; i<=numPCs; i++) {
+                const isWireless = Math.random() > 0.5;
+                if (isWireless) hasWireless = true;
+                pcTypes.push(isWireless ? 'Laptop' : 'PC');
+            }
+
+            const level = {
+                title: `♾️ ภารกิจสุ่มรอบที่ ${endlessStreak}`,
+                description: `เอาชีวิตรอดในรอบที่ ${endlessStreak}! ${hasHacker ? '⚠️ ระวัง Hacker แฝงตัวอยู่!' : 'เชื่อมต่ออุปกรณ์ทุกเครื่องไปยัง Server'}`,
+                nodes: [],
+                edges: [],
+                goals: [],
+                isEndless: true,
+                forceNew: false
+            };
+
+            level.inventory = { 
+                PC: 0, 
+                Laptop: Math.random() > 0.5 ? 2 : 0,
+                Router: numRouters + 1, 
+                Switch: numSwitches, 
+                AP: hasWireless ? 1 : (Math.random() > 0.5 ? 1 : 0),
+                Server: 0, 
+                Firewall: hasHacker ? 1 : 0,
+                IDS: hasHacker && Math.random() > 0.5 ? 1 : 0
+            };
+
+            // Add Server
+            level.nodes.push({ id: 'Server-1', type: 'Server', x: 900, y: 300, radius: NODE_RADIUS, ip: '10.0.0.1', locked: true });
+            
+            // Add PCs / Laptops
+            for(let i=1; i<=numPCs; i++) {
+                const yPos = 120 + (i * 110);
+                const nodeType = pcTypes[i-1];
+                const isWireless = nodeType === 'Laptop';
+                
+                level.nodes.push({ id: `${nodeType}-${i}`, type: nodeType, x: 100, y: yPos, radius: NODE_RADIUS, ip: `192.168.1.${10+i}`, locked: true });
+                let mustInclude = [];
+                if(isWireless) mustInclude.push('AP');
+                if(numSwitches > 0) mustInclude.push('Switch');
+                if(numRouters > 0) mustInclude.push('Router');
+                if(hasHacker) mustInclude.push('Firewall');
+                
+                level.goals.push({ from: `${nodeType}-${i}`, to: 'Server-1', expect: 'success', mustInclude: mustInclude.length > 0 ? mustInclude : undefined });
+            }
+
+            // Add Hacker
+            if(hasHacker) {
+                level.nodes.push({ id: 'Hacker-1', type: 'Hacker', x: 150, y: 550, radius: NODE_RADIUS, ip: '66.249.64.1', locked: true });
+                level.goals.push({ from: 'Hacker-1', to: 'Server-1', expect: 'blocked' });
+            }
+
+            return level;
+        }
+
+        function loadLevel() {
+            let level = CHAPTERS[currentChapterIdx].levels[currentLevelIdx];
+            if (level.isEndless && level.forceNew) {
+                level = generateRandomLevel();
+                CHAPTERS[currentChapterIdx].levels[currentLevelIdx] = level;
+            } else if (!level.isEndless) {
+                endlessStreak = 0;
+            }
+            
+            document.getElementById('quest-title').textContent = level.title;
+            document.getElementById('quest-desc').textContent = level.description;
+            
+            nodes = JSON.parse(JSON.stringify(level.nodes || [])); 
+            edges = JSON.parse(JSON.stringify(level.edges || []));
+            currentInventory = { ...(level.inventory || {}) };
+            
+            packets = [];
+            simulationResults = [];
+            floatingTexts = [];
+            
+            overlay.style.display = 'none';
+            if (simModeSandbox) toggleSandboxSimulation();
+            updateInventoryUI();
+
+            if (level.isEndless) {
+                timeLeft = 60;
+                document.getElementById('quest-desc').innerHTML = `${level.description}<br><br>⏱️ เวลาที่เหลือ: <span id="timer-display" style="color:#ef4444; font-weight:bold;">60</span> วินาที`;
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    const timerEl = document.getElementById('timer-display');
+                    if (timerEl) timerEl.textContent = timeLeft;
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        showToast("หมดเวลา!", 'error');
+                        setTimeout(() => checkWinCondition(true), 1500);
+                    }
+                }, 1000);
+            } else {
+                if (timerInterval) clearInterval(timerInterval);
+            }
+            
+            const btn = document.getElementById('simBtn');
+            if(level.goals === null) {
+                btn.innerHTML = "🚀 โหมดจำลองอิสระ (Sandbox)";
+                btn.onclick = toggleSandboxSimulation;
+            } else {
+                btn.innerHTML = "🚀 รันระบบ (Run Simulation)";
+                btn.onclick = runSimulation;
+            }
+        }
+
+        function nextLevel() {
+            const chap = CHAPTERS[currentChapterIdx];
+            if (chap.levels[currentLevelIdx].isEndless) {
+                chap.levels[currentLevelIdx].forceNew = true;
+                loadLevel();
+                return;
+            }
+            
+            if (currentLevelIdx < chap.levels.length - 1) {
+                currentLevelIdx++;
+            } else if (currentChapterIdx < CHAPTERS.length - 1) {
+                currentChapterIdx++;
+                currentLevelIdx = 0;
+            }
+            renderSidebar();
+            loadLevel();
+        }
+
+        function generateIP(type) {
+            if(type === 'Router') return `192.168.${Math.floor(Math.random()*255)}.1`;
+            if(type === 'Server') return `10.0.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*254)+2}`;
+            if(type === 'Hacker') return `66.249.${Math.floor(Math.random()*255)}.1`;
+            return `192.168.1.${Math.floor(Math.random()*253)+2}`;
+        }
+
+        function addNode(type) {
+            if (currentInventory[type] > 0 || type === 'Hacker') {
+                placementMode = type;
+                showToast(`คลิกพื้นที่ว่างเพื่อวาง ${type}`);
+            }
+        }
+
+        function findShortestPath(startId, endId) {
+            let dynamicEdges = [...edges];
+            nodes.forEach(n1 => {
+                if (n1.type === 'AP') {
+                    nodes.forEach(n2 => {
+                        if (n2.type === 'Laptop' && Math.hypot(n1.x - n2.x, n1.y - n2.y) <= 250) {
+                            dynamicEdges.push({ from: n1.id, to: n2.id });
+                        }
+                    });
+                }
+            });
+
+            let queue = [[startId]];
+            let visited = new Set([startId]);
+
+            while (queue.length > 0) {
+                let path = queue.shift();
+                let node = path[path.length - 1];
+                if (node === endId) return path;
+
+                let neighbors = dynamicEdges
+                    .filter(e => e.from === node || e.to === node)
+                    .map(e => e.from === node ? e.to : e.from);
+
+                for (let neighbor of neighbors) {
+                    if (!visited.has(neighbor)) {
+                        visited.add(neighbor);
+                        queue.push([...path, neighbor]);
+                    }
+                }
+            }
+            return null;
+        }
+
+        function runSimulation() {
+            const level = CHAPTERS[currentChapterIdx].levels[currentLevelIdx];
+            if (!level.goals) return;
+
+            packets = [];
+            simulationResults = [];
+            floatingTexts = [];
+            
+            document.getElementById('simBtn').disabled = true;
+
+            let allNoPath = true;
+
+            // Hacker random attack logic
+            const hackers = nodes.filter(n => n.type === 'Hacker');
+            if (hackers.length > 0) {
+                let possibleEntryPoints = nodes.filter(n => !['Hacker', 'Firewall', 'Server', 'IDS'].includes(n.type));
+                hackers.forEach(h => {
+                    for (let i = edges.length - 1; i >= 0; i--) {
+                        if (edges[i].from === h.id || edges[i].to === h.id) edges.splice(i, 1);
+                    }
+                    if (possibleEntryPoints.length > 0) {
+                        const entryNode = possibleEntryPoints[Math.floor(Math.random() * possibleEntryPoints.length)];
+                        edges.push({ from: h.id, to: entryNode.id, isHackerLink: true });
+                        showToast(`⚠️ Hacker กำลังสุ่มโจมตีผ่าน ${entryNode.type} (${entryNode.id})!`, 'error');
+                    }
+                });
+            }
+            
+            level.goals.forEach(goal => {
+                const path = findShortestPath(goal.from, goal.to);
+                const sourceNode = nodes.find(n => n.id === goal.from);
+                const isMalicious = sourceNode && sourceNode.type === 'Hacker';
+
+                if (!path) {
+                    simulationResults.push({ from: goal.from, to: goal.to, status: 'unreachable' });
+                } else {
+                    allNoPath = false;
+                    packets.push({
+                        path, progress: 0, t: 0, 
+                        sourceId: goal.from, targetId: goal.to, 
+                        isMalicious
+                    });
+                }
+            });
+
+            if(allNoPath && packets.length === 0) {
+                checkWinCondition();
+            }
+        }
+
+        function toggleSandboxSimulation() {
+            simModeSandbox = !simModeSandbox;
+            const btn = document.getElementById('simBtn');
+            if (simModeSandbox) {
+                btn.classList.add('active-sim');
+                simStatus.style.display = 'block';
+                simStatus.textContent = "Sandbox: คลิกโหนดต้นทาง (Source)";
+                simStepSandbox = 0;
+                simSourceSandbox = null;
+                hoverNode = null; 
+                tooltip.style.display = 'none';
+            } else {
+                btn.classList.remove('active-sim');
+                simStatus.style.display = 'none';
+            }
+        }
+        
+        function addFloatingText(x, y, text, color) {
+            floatingTexts.push({ x, y, text, color, life: 60 });
+        }
+
+        function checkWinCondition(timeOut = false) {
+            document.getElementById('simBtn').disabled = false;
+            if (timerInterval) clearInterval(timerInterval);
+            const level = CHAPTERS[currentChapterIdx].levels[currentLevelIdx];
+            if (!level.goals) return;
+
+            let passed = !timeOut;
+            let errors = [];
+            
+            if (timeOut) errors.push("ภารกิจล้มเหลว: หมดเวลา!");
+
+            if (!timeOut) {
+                level.goals.forEach(goal => {
+                    const result = simulationResults.find(r => r.from === goal.from && r.to === goal.to);
+                    
+                    if (goal.expect === 'success') {
+                        if (!result || result.status !== 'success') {
+                            passed = false;
+                            errors.push(`❌ ${goal.from} เชื่อมต่อ ${goal.to} ไม่สำเร็จ`);
+                        } else if (goal.mustInclude) {
+                            const pathTypes = result.path.map(id => nodes.find(n => n.id === id).type);
+                            goal.mustInclude.forEach(reqType => {
+                                if (!pathTypes.includes(reqType)) {
+                                    passed = false;
+                                    errors.push(`❌ เส้นทางจาก ${goal.from} ต้องผ่าน ${reqType}`);
+                                }
+                            });
+                        }
+                    } else if (goal.expect === 'blocked') {
+                        if (!result || result.status === 'success') {
+                            passed = false;
+                            errors.push(`❌ ${goal.from} เจาะระบบเข้าถึง ${goal.to} ได้!`);
+                        }
+                    }
+                });
+            }
+
+            if (passed) {
+                let scoreText = "";
+                let score = 0;
+                if (level.isEndless) {
+                    let cost = (edges.length * 50) + (nodes.filter(n => !n.locked).length * 100);
+                    score = (timeLeft * 20) - cost + 1500;
+                    if (score < 100) score = 100;
+                    scoreText = `<br><span style="color:#eab308; font-weight:bold;">คะแนนความคุ้มค่า (Score): ${score} แต้ม</span>`;
+                    saveScore(score);
+                }
+
+                document.getElementById('level-overlay').innerHTML = `
+                    <h2>🎉 ภารกิจสำเร็จ!</h2>
+                    <p style="color:#cbd5e1; font-size:1.2rem;">ระบบเครือข่ายทำงานได้สมบูรณ์${scoreText}</p>
+                    <button onclick="nextLevel()">ด่านถัดไป ➔</button>
+                `;
+                setTimeout(() => { overlay.style.display = 'flex'; }, 800);
+            } else {
+                showToast(errors[0], 'error');
+            }
+        }
+
+        // --- Interaction ---
+        canvas.addEventListener('mousemove', (e) => {
+            const pos = getMousePos(e);
+            currentMousePos = pos;
+            
+            if (movingNode) {
+                movingNode.x = pos.x;
+                movingNode.y = pos.y;
+                canvas.style.cursor = 'move';
+                return;
+            }
+            
+            const newHoverNode = getNodeAtPosition(pos.x, pos.y);
+            if (newHoverNode !== hoverNode) {
+                hoverNode = newHoverNode;
+                if (hoverNode && !connectingSourceNode && !placementMode) {
+                    document.getElementById('tt-type').textContent = hoverNode.type;
+                    document.getElementById('tt-type').style.color = NODE_STYLES[hoverNode.type].color;
+                    document.getElementById('tt-icon').textContent = NODE_STYLES[hoverNode.type].icon;
+                    document.getElementById('tt-id').textContent = hoverNode.id;
+                    document.getElementById('tt-ip').textContent = hoverNode.ip;
+                    tooltip.style.display = 'block';
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            }
+            
+            if (hoverNode && tooltip.style.display === 'block') {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = rect.width / canvas.width;
+                const scaleY = rect.height / canvas.height;
+                
+                let cssX = pos.x * scaleX + 20;
+                let cssY = pos.y * scaleY + 20;
+                
+                if (cssX + tooltip.offsetWidth > rect.width) cssX = (pos.x * scaleX) - tooltip.offsetWidth - 10;
+                if (cssY + tooltip.offsetHeight > rect.height) cssY = (pos.y * scaleY) - tooltip.offsetHeight - 10;
+                
+                tooltip.style.left = cssX + 'px';
+                tooltip.style.top = cssY + 'px';
+            }
+            
+            if (placementMode) {
+                canvas.style.cursor = 'crosshair';
+            } else if (hoverNode) {
+                if (simModeSandbox) {
+                    canvas.style.cursor = 'crosshair';
+                } else {
+                    const distToCenter = Math.hypot(hoverNode.x - pos.x, hoverNode.y - pos.y);
+                    if (!hoverNode.locked && distToCenter < 16) {
+                        canvas.style.cursor = 'move';
+                        canvas.title = "คลิกค้างเพื่อย้ายอุปกรณ์";
+                    } else {
+                        canvas.style.cursor = 'pointer';
+                        canvas.title = "คลิกค้างแล้วลากเพื่อเชื่อมสายเคเบิล";
+                    }
+                }
+            } else {
+                canvas.style.cursor = 'default';
+                canvas.title = "";
+            }
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            const pos = getMousePos(e);
+            const targetNode = getNodeAtPosition(pos.x, pos.y);
+
+            if (simModeSandbox) {
+                if (targetNode) {
+                    if (simStepSandbox === 0) {
+                        simSourceSandbox = targetNode;
+                        simStepSandbox = 1;
+                        simStatus.innerHTML = `ต้นทาง: <b>${targetNode.id}</b> <br>คลิกเลือกปลายทาง`;
+                    } else if (simStepSandbox === 1) {
+                        if (targetNode !== simSourceSandbox) {
+                            const path = findShortestPath(simSourceSandbox.id, targetNode.id);
+                            if (path) {
+                                const isMalicious = simSourceSandbox.type === 'Hacker';
+                                packets.push({ path, progress: 0, t: 0, sourceId: simSourceSandbox.id, targetId: targetNode.id, isMalicious });
+                            } else {
+                                showToast(`ไม่มีเส้นทางไปถึงเป้าหมาย`, 'error');
+                            }
+                            simStepSandbox = 0;
+                            simSourceSandbox = null;
+                            simStatus.textContent = "Sandbox: คลิกโหนดต้นทาง (Source)";
+                        }
+                    }
+                } else if (simStepSandbox === 1) {
+                    simStepSandbox = 0;
+                    simSourceSandbox = null;
+                    simStatus.textContent = "Sandbox: คลิกโหนดต้นทาง (Source)";
+                }
+                return;
+            }
+
+            if (placementMode && !targetNode) {
+                if (currentInventory[placementMode] > 0 || placementMode === 'Hacker') {
+                    if (placementMode !== 'Hacker') currentInventory[placementMode]--;
+                    updateInventoryUI();
+                    
+                    const id = `${placementMode}-${Date.now().toString().slice(-4)}`;
+                    nodes.push({
+                        id, type: placementMode,
+                        x: pos.x,
+                        y: pos.y,
+                        radius: NODE_RADIUS,
+                        ip: generateIP(placementMode),
+                        locked: false
+                    });
+                }
+                placementMode = null;
+                canvas.style.cursor = 'default';
+                return;
+            }
+
+            if (targetNode && !placementMode) {
+                const distToCenter = Math.hypot(targetNode.x - pos.x, targetNode.y - pos.y);
+                if (!targetNode.locked && distToCenter < 16) {
+                    movingNode = targetNode;
+                } else {
+                    connectingSourceNode = targetNode;
+                }
+                currentMousePos = pos;
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (movingNode) {
+                movingNode = null;
+                return;
+            }
+
+            if (connectingSourceNode && !simModeSandbox) {
+                const pos = getMousePos(e);
+                const targetNode = getNodeAtPosition(pos.x, pos.y);
+
+                if (targetNode && targetNode.id !== connectingSourceNode.id) {
+                    const dist = Math.hypot(targetNode.x - connectingSourceNode.x, targetNode.y - connectingSourceNode.y);
+                    if (dist > MAX_CABLE_LENGTH) {
+                        showToast(`สายเคเบิลยาวไม่พอ! (สูงสุด ${MAX_CABLE_LENGTH}px) ต้องใช้อุปกรณ์มาคั่นกลาง`, 'error');
+                    } else {
+                        const edgeExists = edges.some(edge =>
+                            (edge.from === connectingSourceNode.id && edge.to === targetNode.id) ||
+                            (edge.from === targetNode.id && edge.to === connectingSourceNode.id)
+                        );
+                        if (!edgeExists) {
+                            edges.push({ from: connectingSourceNode.id, to: targetNode.id });
+                        }
+                    }
+                }
+            }
+            connectingSourceNode = null;
+        });
+
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (simModeSandbox) return;
+            const pos = getMousePos(e);
+            const targetNodeIndex = nodes.findIndex(node => Math.hypot(node.x - pos.x, node.y - pos.y) <= node.radius + 5);
+            
+            if (targetNodeIndex > -1) {
+                const node = nodes[targetNodeIndex];
+                if (node.locked) {
+                    showToast("ไม่สามารถลบอุปกรณ์ที่เป็นโจทย์ของด่านได้", 'error');
+                    return;
+                }
+                
+                const nodeId = node.id;
+                for (let i = edges.length - 1; i >= 0; i--) {
+                    if (edges[i].from === nodeId || edges[i].to === nodeId) edges.splice(i, 1);
+                }
+                nodes.splice(targetNodeIndex, 1);
+                
+                if(currentInventory[node.type] !== undefined && node.type !== 'Hacker') {
+                    currentInventory[node.type]++;
+                    updateInventoryUI();
+                }
+                
+                tooltip.style.display = 'none';
+                hoverNode = null;
+                return;
+            }
+            
+            for (let i = edges.length - 1; i >= 0; i--) {
+                const edge = edges[i];
+                const n1 = nodes.find(n => n.id === edge.from);
+                const n2 = nodes.find(n => n.id === edge.to);
+                if (n1 && n2) {
+                    const A = pos.x - n1.x; const B = pos.y - n1.y;
+                    const C = n2.x - n1.x; const D = n2.y - n1.y;
+                    const dot = A * C + B * D;
+                    const len_sq = C * C + D * D;
+                    let param = -1;
+                    if (len_sq != 0) param = dot / len_sq;
+                    let xx, yy;
+                    if (param < 0) { xx = n1.x; yy = n1.y; }
+                    else if (param > 1) { xx = n2.x; yy = n2.y; }
+                    else { xx = n1.x + param * C; yy = n1.y + param * D; }
+                    
+                    if (Math.hypot(pos.x - xx, pos.y - yy) < 8) {
+                        edges.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+        });
+
+        function drawEdges() {
+            ctx.lineWidth = 3;
+            // Draw regular edges
+            edges.forEach(edge => {
+                const fromNode = nodes.find(n => n.id === edge.from);
+                const toNode = nodes.find(n => n.id === edge.to);
+
+                if (fromNode && toNode) {
+                    ctx.beginPath();
+                    ctx.moveTo(fromNode.x, fromNode.y);
+                    ctx.lineTo(toNode.x, toNode.y);
+                    
+                    let cableColor = edge.isHackerLink ? '#ef4444' : '#334155';
+                    if (edge.isHackerLink) ctx.setLineDash([10, 5]);
+
+                    let hasMalicious = packets.some(p => (p.path[p.progress] === edge.from && p.path[p.progress+1] === edge.to) || (p.path[p.progress] === edge.to && p.path[p.progress+1] === edge.from));
+                    
+                    if(packets.length > 0) {
+                        ctx.shadowColor = hasMalicious ? '#ef4444' : '#38bdf8';
+                        ctx.shadowBlur = 5; 
+                    }
+                    ctx.strokeStyle = cableColor;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.setLineDash([]);
+                }
+            });
+
+            // Draw implicit Wi-Fi links
+            nodes.forEach(n1 => {
+                if (n1.type === 'AP') {
+                    nodes.forEach(n2 => {
+                        if (n2.type === 'Laptop' && Math.hypot(n1.x - n2.x, n1.y - n2.y) <= 250) {
+                            ctx.beginPath();
+                            ctx.moveTo(n1.x, n1.y);
+                            ctx.lineTo(n2.x, n2.y);
+                            let hasMalicious = packets.some(p => (p.path[p.progress] === n1.id && p.path[p.progress+1] === n2.id) || (p.path[p.progress] === n2.id && p.path[p.progress+1] === n1.id));
+                            ctx.shadowColor = hasMalicious ? '#ef4444' : '#ec4899';
+                            ctx.shadowBlur = packets.length > 0 ? 5 : 0;
+                            ctx.strokeStyle = '#ec489955';
+                            ctx.setLineDash([4, 4]);
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                            ctx.shadowBlur = 0;
+                        }
+                    });
+                }
+            });
+
+            if (connectingSourceNode && currentMousePos) {
+                ctx.beginPath();
+                ctx.setLineDash([8, 8]);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.moveTo(connectingSourceNode.x, connectingSourceNode.y);
+                ctx.lineTo(currentMousePos.x, currentMousePos.y);
+                ctx.stroke();
+                ctx.setLineDash([]); 
+
+                // Draw Max Cable Range Indicator
+                ctx.beginPath();
+                ctx.arc(connectingSourceNode.x, connectingSourceNode.y, MAX_CABLE_LENGTH, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        function drawNodes() {
+            // Draw AP Coverage
+            nodes.forEach(node => {
+                if (node.type === 'AP') {
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, 250, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(236, 72, 153, 0.05)';
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(236, 72, 153, 0.2)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([10, 10]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            });
+
+            nodes.forEach(node => {
+                const style = NODE_STYLES[node.type] || { color: '#cbd5e1', icon: '❓' };
+                const isSimTarget = simModeSandbox && (node === simSourceSandbox || (simStepSandbox === 1 && hoverNode === node));
+                const isInteractive = node === connectingSourceNode || node === hoverNode || isSimTarget;
+
+                if (isInteractive) {
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, node.radius + 8, 0, Math.PI * 2);
+                    ctx.fillStyle = isSimTarget ? 'rgba(16, 185, 129, 0.2)' : `${style.color}30`;
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, node.radius + 4, 0, Math.PI * 2);
+                    ctx.strokeStyle = isSimTarget ? '#10b981' : style.color;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#18181b';
+                ctx.fill();
+                ctx.lineWidth = node.locked ? 4 : 2;
+                ctx.strokeStyle = style.color;
+                if(node.locked) ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.radius - 2, 0, Math.PI * 2);
+                ctx.fillStyle = `${style.color}20`; 
+                ctx.fill();
+
+                if (!node.locked) {
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, 16, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+                    ctx.fill();
+                }
+
+                ctx.font = '24px Segoe UI Emoji, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(style.icon, node.x, node.y);
+
+                ctx.fillStyle = '#e4e4e7';
+                ctx.font = '12px Segoe UI';
+                let label = node.locked ? `🔒 ${node.id}` : node.type;
+                ctx.fillText(label, node.x, node.y + node.radius + 18);
+            });
+            
+            // Draw ghost node if in placement mode
+            if (placementMode && currentMousePos) {
+                const style = NODE_STYLES[placementMode];
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                ctx.arc(currentMousePos.x, currentMousePos.y, NODE_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = '#18181b';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = style.color;
+                ctx.stroke();
+
+                ctx.font = '24px Segoe UI Emoji, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(style.icon, currentMousePos.x, currentMousePos.y);
+                ctx.globalAlpha = 1.0;
+                
+                // Draw max cable range indicator
+                ctx.beginPath();
+                ctx.arc(currentMousePos.x, currentMousePos.y, MAX_CABLE_LENGTH, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+        
+        function drawPacketsAndTexts() {
+            for (let i = packets.length - 1; i >= 0; i--) {
+                let pkt = packets[i];
+                let n1 = nodes.find(n => n.id === pkt.path[pkt.progress]);
+                let n2 = nodes.find(n => n.id === pkt.path[pkt.progress + 1]);
+                
+                if (n1 && n2) {
+                    pkt.t += 0.015; 
+                    
+                    if (pkt.t >= 0.9 && n2.type === 'Firewall' && pkt.isMalicious) {
+                        addFloatingText(n2.x, n2.y - 40, "BLOCKED", "#ef4444");
+                        simulationResults.push({ from: pkt.sourceId, to: pkt.targetId, status: 'blocked' });
+                        packets.splice(i, 1);
+                        if (packets.length === 0) checkWinCondition();
+                        continue;
+                    }
+                    
+                    if (pkt.t >= 1) {
+                        pkt.t = 0;
+                        pkt.progress++;
+                        let currentNode = nodes.find(n => n.id === pkt.path[pkt.progress]);
+                        if (currentNode && currentNode.type === 'IDS' && pkt.isMalicious) {
+                            addFloatingText(currentNode.x, currentNode.y - 40, "⚠️ DETECTED!", "#eab308");
+                        }
+                    }
+                    
+                    if (pkt.progress < pkt.path.length - 1) {
+                        let curX = n1.x + (n2.x - n1.x) * pkt.t;
+                        let curY = n1.y + (n2.y - n1.y) * pkt.t;
+                        
+                        let pColor = pkt.isMalicious ? '#ef4444' : '#a855f7';
+                        let pShadow = pkt.isMalicious ? '#b91c1c' : '#d8b4fe';
+                        
+                        ctx.beginPath();
+                        ctx.arc(curX, curY, 7, 0, Math.PI * 2);
+                        ctx.fillStyle = pColor; 
+                        ctx.shadowColor = pShadow;
+                        ctx.shadowBlur = 15;
+                        ctx.fill();
+                        
+                        ctx.beginPath();
+                        ctx.arc(curX, curY, 3, 0, Math.PI * 2);
+                        ctx.fillStyle = '#fff';
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+                }
+                
+                if (pkt && pkt.progress >= pkt.path.length - 1) {
+                    simulationResults.push({ from: pkt.sourceId, to: pkt.targetId, status: 'success', path: pkt.path });
+                    addFloatingText(n2.x, n2.y - 30, "ARRIVED", pkt.isMalicious ? '#ef4444' : '#10b981');
+                    packets.splice(i, 1);
+                    if (packets.length === 0) checkWinCondition();
+                }
+            }
+            
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                let ft = floatingTexts[i];
+                ctx.fillStyle = ft.color;
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.globalAlpha = ft.life / 60;
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.globalAlpha = 1.0;
+                
+                ft.y -= 0.5;
+                ft.life--;
+                if (ft.life <= 0) floatingTexts.splice(i, 1);
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawEdges();
+            drawPacketsAndTexts();
+            drawNodes();
+            requestAnimationFrame(render);
+        }
+
+        // Init
+        checkAuth();
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>
