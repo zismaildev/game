@@ -56,7 +56,7 @@ app.post('/api/login', (req, res) => {
         res.json({ message: 'Login successful', user: { username: existingUser.username, role: existingUser.role, score: existingUser.score } });
     } else {
         if (username.toLowerCase() === 'teacher') return res.status(403).json({ error: 'ไม่สามารถใช้ชื่อนี้ได้' });
-        
+
         const newUser = { username, password, role: 'student', score: 0 };
         users.push(newUser);
         writeDB(users);
@@ -71,7 +71,7 @@ app.post('/api/score', (req, res) => {
 
     let users = readDB();
     let userIndex = users.findIndex(u => u.username === username);
-    
+
     if (userIndex > -1) {
         users[userIndex].score += points;
         writeDB(users);
