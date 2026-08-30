@@ -5,7 +5,12 @@ const path = require('path');
 
 const app = express();
 const PORT = 3000;
-const DB_FILE = path.join(__dirname, 'users.json');
+const DB_FILE = process.env.VERCEL ? '/tmp/users.json' : path.join(__dirname, 'users.json');
+
+// หากรันบน Vercel ให้คัดลอกข้อมูลตั้งต้นไปที่ /tmp
+if (process.env.VERCEL && !fs.existsSync(DB_FILE)) {
+    fs.copyFileSync(path.join(__dirname, 'users.json'), DB_FILE);
+}
 
 app.use(cors());
 app.use(express.json());
