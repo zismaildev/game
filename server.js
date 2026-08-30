@@ -27,6 +27,12 @@ function writeDB(data) {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
+// Serve root URL
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'game.html'));
+});
+
+
 // API: Get all users
 app.get('/api/users', (req, res) => {
     const users = readDB();
